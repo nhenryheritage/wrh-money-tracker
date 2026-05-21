@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+:root {
+  --background: hsl(40 33% 98%);
+  --foreground: hsl(214 55% 15%);
+  --wrh-background: 40 33% 98%;
+  --wrh-foreground: 214 55% 15%;
+  --wrh-primary: 213 61% 18%;
+  --wrh-accent: 24 95% 52%;
+  --wrh-border: 34 23% 86%;
+  --wrh-muted: 215 18% 38%;
+  --wrh-trust: 152 35% 34%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
