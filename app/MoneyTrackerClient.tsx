@@ -452,20 +452,20 @@ export default function MoneyTrackerClient() {
           <p className="text-sm font-semibold text-white/85">
             Western Reserve Handyman
           </p>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              aria-pressed={isDarkMode}
-              onClick={() =>
-                setThemeMode((currentTheme) =>
-                  currentTheme === "dark" ? "light" : "dark",
-                )
-              }
-              className="w-fit rounded-lg border border-white/20 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
-            >
-              {isDarkMode ? "Light mode" : "Dark mode"}
-            </button>
-            {authStatus === "in" ? (
+          {authStatus === "in" ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                aria-pressed={isDarkMode}
+                onClick={() =>
+                  setThemeMode((currentTheme) =>
+                    currentTheme === "dark" ? "light" : "dark",
+                  )
+                }
+                className="w-fit rounded-lg border border-[#f96d10]/70 bg-[#f96d10]/15 px-3 py-2 text-sm font-semibold text-white transition hover:bg-[#f96d10]/25"
+              >
+                {isDarkMode ? "Light mode" : "Dark mode"}
+              </button>
               <button
                 type="button"
                 onClick={handleLogout}
@@ -473,8 +473,8 @@ export default function MoneyTrackerClient() {
               >
                 Log out
               </button>
-            ) : null}
-          </div>
+            </div>
+          ) : null}
         </div>
       </div>
 
