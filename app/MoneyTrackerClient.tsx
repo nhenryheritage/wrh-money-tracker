@@ -21,6 +21,7 @@ type ViewProps = {
   stats: Stat[];
   isSaving: boolean;
   statusMessage: string;
+  isDarkMode: boolean;
   setSearchTerm: (value: string) => void;
   setPendingDeleteJobId: (jobId: string | null) => void;
   updateFormField: (field: keyof JobFormData, value: string) => void;
@@ -35,6 +36,10 @@ type Stat = {
   value: string | number;
   detail: string;
 };
+
+type ThemeMode = "light" | "dark";
+
+const themeStorageKey = "wrh-money-tracker.theme.v1";
 
 const emptyForm: JobFormData = {
   customerName: "",
@@ -84,6 +89,33 @@ export default function MoneyTrackerClient() {
   const [password, setPassword] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [themeMode, setThemeMode] = useState<ThemeMode>("light");
+  const [hasLoadedTheme, setHasLoadedTheme] = useState(false);
+  const isDarkMode = themeMode === "dark";
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.queueMicrotask(() => {
+      const storedTheme = window.localStorage.getItem(themeStorageKey);
+
+      if (storedTheme === "dark" || storedTheme === "light") {
+        setThemeMode(storedTheme);
+      }
+
+      setHasLoadedTheme(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !hasLoadedTheme) {
+      return;
+    }
+
+    window.localStorage.setItem(themeStorageKey, themeMode);
+  }, [hasLoadedTheme, themeMode]);
 
   const loadJobs = useCallback(async () => {
     const response = await fetch("/api/jobs");
@@ -391,6 +423,7 @@ export default function MoneyTrackerClient() {
     stats,
     isSaving,
     statusMessage,
+    isDarkMode,
     setSearchTerm,
     setPendingDeleteJobId,
     updateFormField,
@@ -401,7 +434,11 @@ export default function MoneyTrackerClient() {
   };
 
   return (
-    <main className="min-h-screen bg-[#fcfaf8] text-[#11233b]">
+    <main
+      className={`min-h-screen transition-colors ${
+        isDarkMode ? "bg-[#0f1724] text-white" : "bg-[#fcfaf8] text-[#11233b]"
+      }`}
+    >
       <div className="sticky top-0 z-20 border-b border-[#f96d10]/35 bg-[#122b4a] px-4 py-4 text-white shadow-sm sm:px-6 lg:px-8">
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
@@ -415,22 +452,40 @@ export default function MoneyTrackerClient() {
           <p className="text-sm font-semibold text-white/85">
             Western Reserve Handyman
           </p>
-          {authStatus === "in" ? (
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={handleLogout}
+              aria-pressed={isDarkMode}
+              onClick={() =>
+                setThemeMode((currentTheme) =>
+                  currentTheme === "dark" ? "light" : "dark",
+                )
+              }
               className="w-fit rounded-lg border border-white/20 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
             >
-              Log out
+              {isDarkMode ? "Light mode" : "Dark mode"}
             </button>
-          ) : null}
+            {authStatus === "in" ? (
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="w-fit rounded-lg border border-white/20 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
+              >
+                Log out
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
 
       {authStatus === "checking" ? (
         <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-          <Panel className="p-6">
-            <p className="text-sm font-semibold text-[#4f5e72]">
+          <Panel className="p-6" dark={isDarkMode}>
+            <p
+              className={`text-sm font-semibold ${
+                isDarkMode ? "text-[#c6d1c6]" : "text-[#4f5e72]"
+              }`}
+            >
               Checking access...
             </p>
           </Panel>
@@ -442,6 +497,7 @@ export default function MoneyTrackerClient() {
           password={password}
           statusMessage={statusMessage}
           isSaving={isSaving}
+          isDarkMode={isDarkMode}
           setPassword={setPassword}
           handleLogin={handleLogin}
         />
@@ -456,12 +512,14 @@ function LoginPanel({
   password,
   statusMessage,
   isSaving,
+  isDarkMode,
   setPassword,
   handleLogin,
 }: {
   password: string;
   statusMessage: string;
   isSaving: boolean;
+  isDarkMode: boolean;
   setPassword: (value: string) => void;
   handleLogin: (event: FormEvent<HTMLFormElement>) => void;
 }) {
@@ -469,22 +527,38 @@ function LoginPanel({
     <div className="mx-auto w-full max-w-md px-4 py-10 sm:px-6 lg:px-8">
       <form
         onSubmit={handleLogin}
-        className="rounded-lg border border-[#e4dcd3] bg-white p-6 shadow-sm"
+        className={`rounded-lg border p-6 shadow-sm ${
+          isDarkMode
+            ? "border-white/10 bg-[#17211b] text-white"
+            : "border-[#e4dcd3] bg-white text-[#11233b]"
+        }`}
       >
-        <h2 className="text-xl font-semibold text-[#11233b]">Sign in</h2>
-        <p className="mt-2 text-sm leading-6 text-[#4f5e72]">
+        <h2 className="text-xl font-semibold">Sign in</h2>
+        <p
+          className={`mt-2 text-sm leading-6 ${
+            isDarkMode ? "text-[#c6d1c6]" : "text-[#4f5e72]"
+          }`}
+        >
           Enter the tracker password to view and update customer records.
         </p>
 
         <label className="mt-5 block">
-          <span className="mb-2 block text-sm font-semibold text-[#11233b]">
+          <span
+            className={`mb-2 block text-sm font-semibold ${
+              isDarkMode ? "text-[#c6d1c6]" : "text-[#11233b]"
+            }`}
+          >
             Password
           </span>
           <input
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            className="w-full rounded-lg border border-[#e4dcd3] bg-white px-3 py-3 text-sm text-[#11233b] outline-none transition focus:border-[#f96d10] focus:ring-4 focus:ring-[#f96d10]/20"
+            className={`w-full rounded-lg border px-3 py-3 text-sm outline-none transition ${
+              isDarkMode
+                ? "border-white/10 bg-white/5 text-white focus:border-[#d7e7cf] focus:ring-4 focus:ring-white/10"
+                : "border-[#e4dcd3] bg-white text-[#11233b] focus:border-[#f96d10] focus:ring-4 focus:ring-[#f96d10]/20"
+            }`}
             required
           />
         </label>
@@ -508,26 +582,30 @@ function LoginPanel({
 }
 
 function LedgerView(props: ViewProps) {
+  const tone = props.isDarkMode ? "dark" : "light";
+
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-      <StatsGrid stats={props.stats.slice(0, 3)} />
+      <StatsGrid stats={props.stats.slice(0, 3)} tone={tone} />
 
       <div className="grid gap-6 lg:grid-cols-[400px_1fr]">
         <div className="space-y-4">
-          <JobForm {...props} tone="light" />
+          <JobForm {...props} tone={tone} />
         </div>
         <section className="space-y-4">
-          <Panel className="p-4">
+          <Panel className="p-4" dark={props.isDarkMode}>
             <SearchBox
               searchTerm={props.searchTerm}
               setSearchTerm={props.setSearchTerm}
               label="Search completed jobs"
+              tone={tone}
             />
           </Panel>
           <ListHeader
             customerProfiles={props.customerProfiles}
             filteredJobs={props.filteredJobs}
             jobs={props.jobs}
+            dark={props.isDarkMode}
           />
           <div className="grid gap-4">
             {props.customerProfiles.length > 0 ? (
@@ -539,7 +617,7 @@ function LedgerView(props: ViewProps) {
                 />
               ))
             ) : (
-              <EmptyState />
+              <EmptyState tone={tone} />
             )}
           </div>
         </section>
@@ -592,13 +670,17 @@ function StatsGrid({
 function Panel({
   children,
   className = "",
+  dark = false,
 }: {
   children: React.ReactNode;
   className?: string;
+  dark?: boolean;
 }) {
   return (
     <div
-      className={`rounded-lg border border-[#e4dcd3] bg-white shadow-sm ${className}`}
+      className={`rounded-lg border shadow-sm ${
+        dark ? "border-white/10 bg-[#17211b]" : "border-[#e4dcd3] bg-white"
+      } ${className}`}
     >
       {children}
     </div>
@@ -788,17 +870,23 @@ function ListHeader({
   customerProfiles,
   filteredJobs,
   jobs,
+  dark = false,
 }: {
   customerProfiles: CustomerProfile[];
   filteredJobs: Job[];
   jobs: Job[];
+  dark?: boolean;
 }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <h2 className="text-lg font-semibold text-[#11233b]">
+      <h2
+        className={`text-lg font-semibold ${
+          dark ? "text-white" : "text-[#11233b]"
+        }`}
+      >
         Customer profiles
       </h2>
-      <p className="text-sm text-[#4f5e72]">
+      <p className={`text-sm ${dark ? "text-[#c6d1c6]" : "text-[#4f5e72]"}`}>
         Showing {customerProfiles.length} profiles / {filteredJobs.length} of{" "}
         {jobs.length} jobs
       </p>
@@ -812,31 +900,65 @@ function CustomerProfileCard({
   handleDelete,
   pendingDeleteJobId,
   setPendingDeleteJobId,
+  isDarkMode,
 }: ViewProps & {
   profile: CustomerProfile;
 }) {
   return (
-    <article className="overflow-hidden rounded-lg border border-[#e4dcd3] bg-white shadow-sm">
-      <div className="border-b border-[#e4dcd3] bg-[#fcfaf8] p-5">
+    <article
+      className={`overflow-hidden rounded-lg border shadow-sm ${
+        isDarkMode
+          ? "border-white/10 bg-[#17211b]"
+          : "border-[#e4dcd3] bg-white"
+      }`}
+    >
+      <div
+        className={`border-b p-5 ${
+          isDarkMode
+            ? "border-white/10 bg-white/5"
+            : "border-[#e4dcd3] bg-[#fcfaf8]"
+        }`}
+      >
         <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(220px,280px)] md:items-start">
           <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#387559]">
+            <p
+              className={`text-xs font-semibold uppercase tracking-[0.12em] ${
+                isDarkMode ? "text-[#9fb39f]" : "text-[#387559]"
+              }`}
+            >
               Customer profile
             </p>
-            <h3 className="mt-1 break-words text-xl font-semibold leading-tight text-[#11233b]">
+            <h3
+              className={`mt-1 break-words text-xl font-semibold leading-tight ${
+                isDarkMode ? "text-white" : "text-[#11233b]"
+              }`}
+            >
               {profile.customerName}
             </h3>
-            <p className="mt-1 break-words text-sm leading-5 text-[#4f5e72]">
+            <p
+              className={`mt-1 break-words text-sm leading-5 ${
+                isDarkMode ? "text-[#c6d1c6]" : "text-[#4f5e72]"
+              }`}
+            >
               Latest address: {profile.latestAddress}
             </p>
           </div>
           <div className="grid min-w-0 grid-cols-3 gap-2 text-left sm:text-right">
-            <ProfileMetric label="Jobs" value={profile.jobCount} />
+            <ProfileMetric
+              label="Jobs"
+              value={profile.jobCount}
+              dark={isDarkMode}
+            />
             <ProfileMetric
               label="Total"
               value={formatCurrency(profile.totalRevenue)}
+              dark={isDarkMode}
             />
-            <ProfileMetric label="Latest" value={formatDate(profile.latestDate)} />
+            <ProfileMetric
+              label="Latest"
+              value={formatDate(profile.latestDate)}
+              dark={isDarkMode}
+            />
           </div>
         </div>
       </div>
@@ -850,6 +972,7 @@ function CustomerProfileCard({
             handleDelete={handleDelete}
             pendingDeleteJobId={pendingDeleteJobId}
             setPendingDeleteJobId={setPendingDeleteJobId}
+            dark={isDarkMode}
           />
         ))}
       </div>
@@ -860,16 +983,26 @@ function CustomerProfileCard({
 function ProfileMetric({
   label,
   value,
+  dark = false,
 }: {
   label: string;
   value: string | number;
+  dark?: boolean;
 }) {
   return (
     <div className="min-w-0">
-      <p className="truncate text-xs font-semibold uppercase tracking-[0.08em] text-[#4f5e72]">
+      <p
+        className={`truncate text-xs font-semibold uppercase tracking-[0.08em] ${
+          dark ? "text-[#c6d1c6]" : "text-[#4f5e72]"
+        }`}
+      >
         {label}
       </p>
-      <p className="mt-1 break-words text-sm font-semibold leading-5 text-[#11233b]">
+      <p
+        className={`mt-1 break-words text-sm font-semibold leading-5 ${
+          dark ? "text-white" : "text-[#11233b]"
+        }`}
+      >
         {value}
       </p>
     </div>
@@ -882,21 +1015,35 @@ function CustomerJobItem({
   handleDelete,
   pendingDeleteJobId,
   setPendingDeleteJobId,
+  dark = false,
 }: {
   job: Job;
   handleEdit: (job: Job) => void;
   handleDelete: (jobId: string) => void;
   pendingDeleteJobId: string | null;
   setPendingDeleteJobId: (jobId: string | null) => void;
+  dark?: boolean;
 }) {
   return (
-    <div className="rounded-lg border border-[#e4dcd3] p-4">
+    <div
+      className={`rounded-lg border p-4 ${
+        dark ? "border-white/10 bg-[#111a28]" : "border-[#e4dcd3] bg-white"
+      }`}
+    >
       <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
         <div className="min-w-0">
-          <p className="break-words text-sm font-semibold leading-5 text-[#11233b]">
+          <p
+            className={`break-words text-sm font-semibold leading-5 ${
+              dark ? "text-white" : "text-[#11233b]"
+            }`}
+          >
             {job.briefSummary}
           </p>
-          <p className="mt-1 break-words text-sm leading-5 text-[#4f5e72]">
+          <p
+            className={`mt-1 break-words text-sm leading-5 ${
+              dark ? "text-[#c6d1c6]" : "text-[#4f5e72]"
+            }`}
+          >
             {job.jobAddress}
           </p>
         </div>
@@ -906,17 +1053,30 @@ function CustomerJobItem({
           handleDelete={handleDelete}
           pendingDeleteJobId={pendingDeleteJobId}
           setPendingDeleteJobId={setPendingDeleteJobId}
+          dark={dark}
         />
       </div>
 
       <dl className="mt-4 grid gap-3 sm:grid-cols-3">
-        <JobDetail label="Amount" value={formatCurrency(job.finalAmount)} />
-        <JobDetail label="Completed" value={formatDate(job.dateCompleted)} />
-        <JobDetail label="Work" value={job.jobDescription} />
+        <JobDetail
+          label="Amount"
+          value={formatCurrency(job.finalAmount)}
+          dark={dark}
+        />
+        <JobDetail
+          label="Completed"
+          value={formatDate(job.dateCompleted)}
+          dark={dark}
+        />
+        <JobDetail label="Work" value={job.jobDescription} dark={dark} />
       </dl>
 
       {job.optionalNotes ? (
-        <p className="mt-3 break-words rounded-lg bg-[#fcfaf8] px-3 py-2 text-sm leading-6 text-[#4f5e72]">
+        <p
+          className={`mt-3 break-words rounded-lg px-3 py-2 text-sm leading-6 ${
+            dark ? "bg-white/5 text-[#c6d1c6]" : "bg-[#fcfaf8] text-[#4f5e72]"
+          }`}
+        >
           {job.optionalNotes}
         </p>
       ) : null}
@@ -1105,13 +1265,33 @@ function TextArea({
   );
 }
 
-function JobDetail({ label, value }: { label: string; value: string }) {
+function JobDetail({
+  label,
+  value,
+  dark = false,
+}: {
+  label: string;
+  value: string;
+  dark?: boolean;
+}) {
   return (
-    <div className="min-w-0 rounded-md bg-[#fcfaf8] px-3 py-2">
-      <dt className="truncate text-xs font-semibold uppercase tracking-[0.08em] text-[#387559]">
+    <div
+      className={`min-w-0 rounded-md px-3 py-2 ${
+        dark ? "bg-white/5" : "bg-[#fcfaf8]"
+      }`}
+    >
+      <dt
+        className={`truncate text-xs font-semibold uppercase tracking-[0.08em] ${
+          dark ? "text-[#9fb39f]" : "text-[#387559]"
+        }`}
+      >
         {label}
       </dt>
-      <dd className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-[#4f5e72]">
+      <dd
+        className={`mt-1 whitespace-pre-wrap break-words text-sm leading-6 ${
+          dark ? "text-[#c6d1c6]" : "text-[#4f5e72]"
+        }`}
+      >
         {value}
       </dd>
     </div>
